@@ -5,8 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -34,6 +36,7 @@ func main() {
 
 	i := 0
 	ch := make(chan []string)
+	var wg sync.WaitGroup
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -44,21 +47,34 @@ func main() {
 		}
 		i++
 
-		go func(r []string) {
-			processData(r)
+		wg.Add(1)
+		go func(r []string, i int) {
+			defer wg.Done()
+			processData(i, r)
 			ch <- r
-		}(record)
+		}(record, i)
 
-		fmt.Printf("go %d %s\n", i, record)
+		fmt.Printf("\rgo %d", i)
 	}
-	for ; i >= 0; i-- {
-		fmt.Printf("<- %d %s\n", i, <-ch)
+
+	// closer
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
+	// print channel results (necessary to prevent exit programm before)
+	j := 0
+	for range ch {
+		j++
+		fmt.Printf("\r\t\t\t\t | done %d", j)
 	}
 
 	fmt.Printf("\n%2fs", time.Since(start).Seconds())
 
 }
 
-func processData([]string) {
-	time.Sleep(10 * time.Millisecond)
+func processData(i int, r []string) {
+	time.Sleep(time.Duration(1000+rand.Intn(8000)) * time.Millisecond)
+	fmt.Printf("\r\t\t| proc %d", i)
 }
