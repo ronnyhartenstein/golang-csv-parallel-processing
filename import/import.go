@@ -33,8 +33,8 @@ func main() {
 	reader := csv.NewReader(csvfile)
 
 	i := 0
+	ch := make(chan []string)
 	for {
-		i++
 		record, err := reader.Read()
 		if err == io.EOF {
 			break
@@ -42,9 +42,17 @@ func main() {
 			fmt.Println(err)
 			return
 		}
+		i++
 
-		processData(record)
-		fmt.Printf("\r%d %s  ..", i, record)
+		go func(r []string) {
+			processData(r)
+			ch <- r
+		}(record)
+
+		fmt.Printf("go %d %s\n", i, record)
+	}
+	for ; i >= 0; i-- {
+		fmt.Printf("<- %d %s\n", i, <-ch)
 	}
 
 	fmt.Printf("\n%2fs", time.Since(start).Seconds())
