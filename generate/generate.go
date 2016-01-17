@@ -8,12 +8,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var filename = flag.String("f", "REQUIRED", "target CSV file (tuncated if exists)")
 var num = flag.Int("n", 1000, "rows to generate")
 
 func main() {
+	start := time.Now()
 	flag.Parse()
 	fmt.Print(strings.Join(flag.Args(), "\n"))
 	if *filename == "REQUIRED" {
@@ -28,19 +30,18 @@ func main() {
 	defer csvfile.Close()
 
 	writer := csv.NewWriter(csvfile)
-	//fmt.Println(writer)
 	for i := 0; i < *num; i++ {
-
 		single := []string{strconv.Itoa(i), "bla", "fasel"}
 		er := writer.Write(single)
 		if er != nil {
 			fmt.Println("error", er)
 			return
 		}
-		//fmt.Print(".")
 		if i%1000 == 0 {
 			fmt.Printf("\r%d", i)
 		}
 		writer.Flush()
 	}
+
+	fmt.Printf("\n%2fs", time.Since(start).Seconds())
 }
